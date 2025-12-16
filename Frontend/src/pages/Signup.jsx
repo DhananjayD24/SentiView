@@ -12,7 +12,7 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -119,7 +119,8 @@ const Signup = () => {
                 </p>
               </div>
 
-              <Button
+              <div className='space-y-3 mt-4'>
+                <Button
                 type="submit"
                 variant="hero"
                 size="lg"
@@ -135,6 +136,24 @@ const Signup = () => {
                   'Create Account'
                 )}
               </Button>
+              <Button
+                type="submit"
+                variant="hero"
+                size="lg"
+                className="w-full"
+                disabled={isLoading}
+                onClick={loginWithGoogle}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Create account using Google'
+                )}
+              </Button>
+              </div>
             </form>
 
             <div className="mt-6 text-center text-sm">

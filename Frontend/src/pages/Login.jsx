@@ -1,45 +1,46 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Navbar } from '@/components/layout/Navbar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext.jsx';
-import { BarChart3, Loader2, Mail, Lock } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Navbar } from "@/components/layout/Navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext.jsx";
+import { BarChart3, Loader2, Mail, Lock } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all fields.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please fill in all fields.",
+        variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       await login(email, password);
       toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
+        title: "Welcome back!",
+        description: "You have successfully logged in.",
       });
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
       toast({
-        title: 'Login Failed',
-        description: 'Invalid email or password.',
-        variant: 'destructive',
+        title: "Login Failed",
+        description: "Invalid email or password.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -49,7 +50,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-24 pb-16 px-4 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -92,34 +93,59 @@ const Login = () => {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                variant="hero"
-                size="lg"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                  onClick={loginWithGoogle}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Continue with Google"
+                  )}
+                </Button>
+              </div>
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link to="/signup" className="text-primary hover:underline font-medium">
+              <span className="text-muted-foreground">
+                Don't have an account?{" "}
+              </span>
+              <Link
+                to="/signup"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign up
               </Link>
             </div>
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-4">
-            Demo: Enter any email/password to login
+            Use your registered email/password or Google login
           </p>
         </div>
       </main>
