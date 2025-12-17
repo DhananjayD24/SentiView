@@ -89,21 +89,38 @@ export function AuthProvider({ children }) {
 
   // 🔹 Google login
   const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
+    try{const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
+    } catch (error) {
+      throw error;
+    }
   };
 
   // 🔹 Email login
   const login = async (email, password) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      throw error;
+    }
   };
 
   // 🔹 Email signup
   const signup = async (name, email, password) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
+    try{
+      const result = await createUserWithEmailAndPassword(auth, email, password);
     // displayName can be updated later if needed
 
     await updateProfile(result.user, { displayName: name });
+    setUser({
+    id: result.user.uid,
+  name: name, 
+  email: result.user.email,
+  avatar: result.user.photoURL,
+  });
+    } catch (error) {
+      throw error;
+    }
   };
 
   // 🔹 Logout

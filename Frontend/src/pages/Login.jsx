@@ -5,15 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext.jsx";
 import { BarChart3, Loader2, Mail, Lock } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
-  const { loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsLoading(false);
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,15 +42,23 @@ const Login = () => {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      navigate("/dashboard");
     } catch (error) {
+      setIsLoading(false);
+      let message = "Authentication failed. Please try again.";
+
+      if (error.code === "auth/invalid-credential") {
+        message = "Incorrect email or password.";
+      } else if (error.code === "auth/invalid-email") {
+        message = "The email address is not valid.";
+      } else if (error.code === "auth/too-many-requests") {
+        message = "Too many failed login attempts. Please try again later.";
+      }
+
       toast({
         title: "Login Failed",
-        description: "Invalid email or password.",
+        description: message,
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -53,7 +68,7 @@ const Login = () => {
 
       <main className="pt-20 pb-1 px-4 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-md">
-          <div className="text-center mb-2"> 
+          <div className="text-center mb-2">
             <h1 className="text-2xl font-bold">Welcome Back</h1>
             <p className="text-muted-foreground">
               Sign in to access your analysis history
@@ -63,33 +78,35 @@ const Login = () => {
           <div className="glass-card p-6">
             <form onSubmit={handleSubmit} className="space-y-2">
               <Button
-                  type="submit"
-                  variant="hero"
-                  size="lg"
-                  className="w-full bg-white text-black hover:bg-gray-100 
+                type="button"
+                variant="hero"
+                size="lg"
+                className="w-full bg-white text-black hover:bg-gray-100 
              flex items-center justify-center gap-2
              shadow-none ring-0 focus:ring-0 focus-visible:ring-0
              hover:shadow-none"
-                  disabled={isLoading}
-                  onClick={loginWithGoogle}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      <img
-                        src="/google.svg.png"
-                        alt="Google"
-                        className="h-5 w-5"
-                      />
-                      Sign in with Google
-                    </>
-                  )}
-                </Button>
-                <div className="text-center text-muted-foreground text-sm">OR</div>
+                disabled={isLoading}
+                onClick={loginWithGoogle}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src="/google.svg.png"
+                      alt="Google"
+                      className="h-5 w-5"
+                    />
+                    Sign in with Google
+                  </>
+                )}
+              </Button>
+              <div className="text-center text-muted-foreground text-sm">
+                OR
+              </div>
               <div className="">
                 <label className="text-sm font-medium">Email</label>
                 <div className="relative">
@@ -118,24 +135,22 @@ const Login = () => {
                 </div>
               </div>
 
-              
-                <Button
-                  type="submit"
-                  variant="hero"
-                  size="lg"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-              
+              <Button
+                type="submit"
+                variant="hero"
+                size="lg"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
             </form>
 
             <div className="mt-2 text-center text-sm">

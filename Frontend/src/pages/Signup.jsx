@@ -1,19 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { BarChart3, Loader2, Mail, Lock, User } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signup, loginWithGoogle } = useAuth();
+  const { signup, loginWithGoogle, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsLoading(false);
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  const getSignupErrorMessage = (error) => {
+    switch (error.code) {
+      case "auth/email-already-in-use":
+        return "An account with this email already exists. Please sign in instead.";
+
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+
+      case "auth/weak-password":
+        return "Password is too weak. Use at least 6 characters.";
+
+      case "auth/network-request-failed":
+        return "Network error. Please check your internet connection.";
+
+      default:
+        return "Unable to create account at the moment. Please try again later.";
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,15 +70,13 @@ const Signup = () => {
         title: "Account Created!",
         description: "Welcome to SentiView.",
       });
-      navigate("/dashboard");
     } catch (error) {
+      setIsLoading(false);
       toast({
         title: "Signup Failed",
-        description: "Something went wrong. Please try again.",
+        description: getSignupErrorMessage(error),
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -72,7 +96,7 @@ const Signup = () => {
           <div className="glass-card p-6">
             <form onSubmit={handleSubmit} className="space-y-2">
               <Button
-                type="submit"
+                type="button"
                 variant="hero"
                 size="lg"
                 className="w-full bg-white text-black hover:bg-gray-100 
