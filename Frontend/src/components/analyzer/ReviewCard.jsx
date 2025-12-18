@@ -1,12 +1,12 @@
-import { cn } from '@/lib/utils';
-import { ThumbsUp, ThumbsDown, Minus } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { ThumbsUp, ThumbsDown, Minus } from "lucide-react";
 
 export function ReviewCard({ review }) {
   const getSentimentIcon = () => {
     switch (review.sentiment) {
-      case 'positive':
+      case "positive":
         return <ThumbsUp className="h-4 w-4" />;
-      case 'negative':
+      case "negative":
         return <ThumbsDown className="h-4 w-4" />;
       default:
         return <Minus className="h-4 w-4" />;
@@ -15,12 +15,12 @@ export function ReviewCard({ review }) {
 
   const getSentimentStyles = () => {
     switch (review.sentiment) {
-      case 'positive':
-        return 'border-sentiment-positive/30 bg-sentiment-positive/5';
-      case 'negative':
-        return 'border-sentiment-negative/30 bg-sentiment-negative/5';
+      case "positive":
+        return "border-sentiment-positive/30 bg-sentiment-positive/5";
+      case "negative":
+        return "border-sentiment-negative/30 bg-sentiment-negative/5";
       default:
-        return 'border-sentiment-neutral/30 bg-sentiment-neutral/5';
+        return "border-sentiment-neutral/30 bg-sentiment-neutral/5";
     }
   };
 
@@ -37,9 +37,9 @@ export function ReviewCard({ review }) {
           className={cn(
             "flex-shrink-0 p-1.5 rounded-full",
             `sentiment-${review.sentiment}`,
-            review.sentiment === 'positive' && 'bg-sentiment-positive/20',
-            review.sentiment === 'negative' && 'bg-sentiment-negative/20',
-            review.sentiment === 'neutral' && 'bg-sentiment-neutral/20'
+            review.sentiment === "positive" && "bg-sentiment-positive/20",
+            review.sentiment === "negative" && "bg-sentiment-negative/20",
+            review.sentiment === "neutral" && "bg-sentiment-neutral/20"
           )}
         >
           {getSentimentIcon()}
@@ -47,17 +47,17 @@ export function ReviewCard({ review }) {
       </div>
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap gap-1.5">
-          {review.keywords.slice(0, 3).map((keyword, idx) => (
+          {(review.keywords ?? []).slice(0, 3).map((item, idx) => (
             <span
               key={idx}
               className="px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground"
             >
-              {keyword}
+              {item.word ?? item}
             </span>
           ))}
         </div>
         <span className="text-xs text-muted-foreground">
-          {Math.round(review.confidence * 100)}% confidence
+          {Math.round((review.score ?? 0) * 100)}% confidence
         </span>
       </div>
     </div>

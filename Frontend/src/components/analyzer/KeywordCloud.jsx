@@ -5,7 +5,7 @@ export function KeywordCloud({ title, keywords, type }) {
     <div className="space-y-3">
       <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
       <div className="flex flex-wrap gap-2">
-        {keywords.map((keyword, index) => (
+        {keywords.map((item, index) => (
           <span
             key={index}
             className={cn(
@@ -15,7 +15,7 @@ export function KeywordCloud({ title, keywords, type }) {
                 : "bg-sentiment-negative/15 text-sentiment-negative border border-sentiment-negative/20"
             )}
           >
-            {keyword}
+            {item.word} ({item.count})
           </span>
         ))}
       </div>

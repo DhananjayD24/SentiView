@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { HistoryList } from '@/components/dashboard/HistoryList';
 import { useAuth } from '@/contexts/AuthContext';
-import { dummyHistory } from '@/data/dummyData';
+import { apiFetch } from '@/lib/api';
+import { toast } from '@/components/ui/use-toast';
 import { History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -11,21 +12,65 @@ import { Link } from 'react-router-dom';
 const Dashboard = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
+  if (!isAuthenticated) {
+    navigate('/login');
+    return;
+  }
+
+  const fetchHistory = async () => {
+    try {
+      const data = await apiFetch('/api/history');
+      setHistory(data);
+    } catch (error) {
+      toast({
+        title: 'Failed to load history',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-  }, [isAuthenticated, navigate]);
+  };
+
+  fetchHistory();
+}, [isAuthenticated, navigate]);
+
 
   const handleSelectHistory = (id) => {
     // Navigate to analysis details
-    console.log('Selected:', id);
+    navigate(`/history/${id}`);
   };
 
   if (!isAuthenticated) {
     return null;
   }
+
+  const handleDeleteHistory = async (id) => {
+  try {
+    await apiFetch(`/api/history/${id}`, {
+      method: "DELETE",
+    });
+
+    // Optimistic UI update
+    setHistory((prev) => prev.filter((item) => item._id !== id));
+
+    toast({
+      title: "Analysis deleted",
+      description: "The analysis has been removed from your history.",
+    });
+  } catch (error) {
+    toast({
+      title: "Delete failed",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,7 +99,7 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          <HistoryList history={dummyHistory} onSelect={handleSelectHistory} />
+          <HistoryList history={history} onSelect={handleSelectHistory} onDelete={handleDeleteHistory} loading={loading} />
         </div>
       </main>
     </div>

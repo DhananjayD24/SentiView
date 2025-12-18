@@ -11,6 +11,7 @@ import SavedProducts from "./pages/SavedProducts.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import NotFound from "./pages/Not-Found.jsx";
+import HistoryDetails from "./pages/HistoryDetails.jsx";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/saved" element={<SavedProducts />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/history/:id" element={<HistoryDetails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

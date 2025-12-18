@@ -3,30 +3,42 @@ import { Navbar } from '@/components/layout/Navbar';
 import { AnalyzerInput } from '@/components/analyzer/AnalyzerInput';
 import { AnalysisResults } from '@/components/analyzer/AnalysisResults';
 import { dummyAnalysisResult } from '@/data/dummyData';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
+import { apiFetch } from '@/lib/api';
 
 const Analyze = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
 
   const handleAnalyze = async (input, mode) => {
-    setIsAnalyzing(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setResults({
-      ...dummyAnalysisResult,
-      productName: mode === 'link' ? 'Product from ' + new URL(input).hostname : 'Custom Reviews Analysis',
-      productLink: mode === 'link' ? input : undefined,
+  setIsAnalyzing(true);
+
+  try {
+    const data = await apiFetch("/api/analyze", {
+      method: "POST",
+      body: JSON.stringify({
+        type: mode === "link" ? "product" : "text",
+        content: input,
+      }),
     });
-    
-    setIsAnalyzing(false);
+
+    // backend may return { result } or just result
+    setResults(data.result ?? data);
+
     toast({
-      title: 'Analysis Complete',
-      description: 'Your sentiment analysis is ready to view.',
+      title: "Analysis Complete",
+      description: "Your sentiment analysis is ready to view.",
     });
-  };
+  } catch (error) {
+    toast({
+      title: "Analysis Failed",
+      description: error.message || "Unable to analyze right now.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
 
   const handleSave = () => {
     toast({
