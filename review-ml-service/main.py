@@ -148,6 +148,11 @@
 from fastapi import FastAPI
 from transformers import pipeline
 import nltk
+from utils.platform import identify_platform
+from adapters.amazon import fetch_amazon_reviews
+import re
+from typing import List, Dict
+
 
 # -------------------------
 # NLTK setup (quiet & safe)
@@ -292,46 +297,183 @@ def calculate_severity(aspect_summary: dict) -> dict:
 
     return severity_map
 
+def clean_pasted_reviews(text: str) -> str:
+    lines = text.splitlines()
+    clean_lines = []
+
+    junk_patterns = [
+        r"verified purchase",
+        r"reviewed in",
+        r"\d+\s+people found this helpful",
+        r"helpful",
+        r"customer images",
+        r"read more",
+        r"\bstar\b",
+        r"★★★★★",
+        r"★★★★",
+        r"★★★",
+        r"★★",
+        r"★"
+    ]
+
+    for line in lines:
+        line = line.strip()
+
+        # Skip empty lines
+        if not line:
+            continue
+
+        lower = line.lower()
+
+        # Remove junk pattern lines
+        if any(re.search(pattern, lower) for pattern in junk_patterns):
+            continue
+
+        # Remove lines that are too short (names, buttons)
+        if len(line) < 15:
+            continue
+
+        clean_lines.append(line)
+
+    return " ".join(clean_lines)
+
+def extract_star_reviews(text: str):
+    """
+    Extract reviews based on star rating blocks.
+    Works with Amazon / Flipkart pasted reviews.
+    """
+    reviews = []
+
+    # Split text whenever a star line starts
+    blocks = re.split(r"\n(?=[1-5]\.0 out of 5 stars)", text)
+
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+
+        # Extract star rating
+        star_match = re.search(r"([1-5])\.0 out of 5 stars", block)
+        if not star_match:
+            continue
+
+        stars = int(star_match.group(1))
+
+        # Remove star line + metadata, keep review text
+        cleaned = clean_pasted_reviews(block)
+
+        if not cleaned:
+            continue
+
+        if stars <= 2:
+            sentiment = "negative"
+        elif stars == 3:
+            sentiment = "neutral"
+        else:
+            sentiment = "positive"
+
+        reviews.append({
+            "text": cleaned,
+            "sentiment": sentiment
+        })
+
+    return reviews
 
 # -------------------------
 # API Endpoint
 # -------------------------
 @app.post("/analyze")
 def analyze_text(data: dict):
-    text = data.get("text", "")
+    text = data.get("text")
+    product_url = data.get("productUrl")
+    
+# Input validation
+    if not text and not product_url:
+        return {"error": "Either text or productUrl is required"}
 
-    if not text or not text.strip():
-        return {"error": "Text is empty"}
+    if text and product_url:
+        return {"error": "Provide only one input: text OR productUrl"}
 
-    if len(text) > 5000:
-        return {"error": "Text too long"}
+    if text:
+        if not text.strip():
+            return {"error": "Text is empty"}
 
-    sentences = nltk.sent_tokenize(text)
-    results = []
+        if len(text) > 5000:
+            return {"error": "Text too long"}
+        
+    platform = None
 
-    for sentence in sentences:
-        prediction = sentiment_pipeline(sentence)[0]
-        label = prediction["label"]
-        confidence = prediction["score"]
+    if product_url:
+        platform = identify_platform(product_url)
 
-        lower_sentence = sentence.lower()
+        if platform == "amazon":
+            try:
+                reviews = fetch_amazon_reviews(product_url)
+            except Exception as e:
+                return {"error": str(e)}
+    
+            if not reviews:
+                return {
+                    "error": "Amazon blocked automated review access",
+                    "fallback": "Please paste reviews manually for analysis",
+                    "platform": "amazon"
+                }
+    
+            # Combine reviews into text for existing pipeline
+            text = ". ".join(reviews)
 
-        # Hybrid sentiment logic
-        if any(word in lower_sentence for word in NEUTRAL_WORDS):
-            sentiment = "neutral"
-        elif confidence < 0.6:
-            sentiment = "neutral"
         else:
-            sentiment = "positive" if label == "POSITIVE" else "negative"
+            return {"error": f"Platform '{platform}' not supported yet"}
 
-        aspects = detect_aspects(sentence)
+    results: list = []
+    # ⭐ FIRST: try star-based extraction on RAW text
+    star_reviews = extract_star_reviews(text)
 
-        results.append({
-            "sentence": sentence,
-            "sentiment": sentiment,
-            "confidence": round(confidence, 2),
-            "aspects": aspects
-        })
+    if star_reviews:
+        # STAR-DRIVEN MODE
+        for review in star_reviews:
+            sentence = review["text"]          # already cleaned inside extractor
+            sentiment = review["sentiment"]
+
+            aspects = detect_aspects(sentence)
+
+            results.append({
+                "sentence": sentence,
+                "sentiment": sentiment,
+                "confidence": 1.0,
+                "aspects": aspects
+            })
+
+    else:
+        # 🧹 CLEAN ONLY IF NO STARS FOUND
+        cleaned_text = clean_pasted_reviews(text)
+
+        sentences = nltk.sent_tokenize(cleaned_text)
+
+        for sentence in sentences:
+            prediction = sentiment_pipeline(sentence)[0]
+            label = prediction["label"]
+            confidence = prediction["score"]
+
+            lower_sentence = sentence.lower()
+
+            if any(word in lower_sentence for word in NEUTRAL_WORDS):
+                sentiment = "neutral"
+            elif confidence < 0.6:
+                sentiment = "neutral"
+            else:
+                sentiment = "positive" if label == "POSITIVE" else "negative"
+    
+            aspects = detect_aspects(sentence)
+
+            results.append({
+                "sentence": sentence,
+                "sentiment": sentiment,
+                "confidence": round(confidence, 2),
+                "aspects": aspects
+            })
+
+
 
     # Aggregation & insights
     aspect_summary = aggregate_aspects(results)

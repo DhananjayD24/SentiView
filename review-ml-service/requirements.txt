@@ -3,3 +3,5 @@ uvicorn
 transformers
 torch
 nltk
+beautifulsoup4
+requests
