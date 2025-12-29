@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Product Review Analyzer",
+  "version": "1.0",
+  "description": "Extracts product reviews and sends them for analysis",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://www.amazon.in/*",
+    "https://www.flipkart.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.amazon.in/*",
+        "https://www.flipkart.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
