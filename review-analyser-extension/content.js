@@ -93,3 +93,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     reviews
   });
 });
+
+// 🔐 Listen for Firebase token from frontend
+window.addEventListener("message", (event) => {
+  // Only accept messages from same page
+  if (event.source !== window) return;
+
+  // Only handle our specific message
+  if (event.data?.type === "SET_FIREBASE_TOKEN") {
+    const token = event.data.token;
+
+    if (!token) return;
+
+    // ✅ Store token in Chrome extension storage
+    chrome.storage.local.set({ firebaseToken: token }, () => {
+      console.log("✅ Firebase token stored in extension");
+    });
+  }
+});
+

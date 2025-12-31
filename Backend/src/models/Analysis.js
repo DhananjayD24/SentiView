@@ -2,26 +2,40 @@ import mongoose from "mongoose";
 
 const analysisSchema = new mongoose.Schema(
   {
-    // Firebase UID (NOT MongoDB ObjectId)
+    // Firebase UID
     userId: {
       type: String,
       required: false, // guest users allowed
       index: true,
     },
 
-    inputType: {
+    platform: {
       type: String,
-      enum: ["text", "product"],
+      enum: ["amazon", "flipkart"],
       required: true,
     },
 
-    inputValue: {
-      type: String,
+    product: {
+      name: { type: String },
+      url: { type: String },
+    },
+
+    summaryCounts: {
+      type: Object,
       required: true,
     },
 
-    // Full analysis result JSON
-    result: {
+    aspectSummary: {
+      type: Object,
+      required: true,
+    },
+
+    severityAnalysis: {
+      type: Object,
+      required: true,
+    },
+
+    insights: {
       type: Object,
       required: true,
     },

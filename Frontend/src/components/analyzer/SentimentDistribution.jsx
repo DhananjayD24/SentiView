@@ -4,9 +4,11 @@ export function SentimentDistribution({
   neutral,
   total,
 }) {
-  const positivePercent = Math.round((positive / total) * 100);
-  const negativePercent = Math.round((negative / total) * 100);
-  const neutralPercent = Math.round((neutral / total) * 100);
+  const safeTotal = total || 1;
+
+  const positivePercent = Math.round((positive / safeTotal) * 100);
+  const negativePercent = Math.round((negative / safeTotal) * 100);
+  const neutralPercent = Math.round((neutral / safeTotal) * 100);
 
   return (
     <div className="space-y-4">

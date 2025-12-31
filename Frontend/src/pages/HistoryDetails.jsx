@@ -15,7 +15,7 @@ const HistoryDetails = () => {
     const fetchAnalysis = async () => {
       try {
         const data = await apiFetch(`/api/history/${id}`);
-        setResult(data.result);
+        setResult(data);
       } catch (error) {
         toast({
           title: "Failed to load analysis",
@@ -59,9 +59,7 @@ const HistoryDetails = () => {
       <h1 className="text-2xl md:text-3xl font-bold">
         Analysis Details
       </h1>
-      <p className="text-sm text-muted-foreground">
-        View full sentiment breakdown
-      </p>
+      
     </div>
 
     {result && <AnalysisResults result={result} />}

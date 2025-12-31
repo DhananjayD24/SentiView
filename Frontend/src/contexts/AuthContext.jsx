@@ -1,55 +1,3 @@
-// import React, { createContext, useContext, useState } from 'react';
-
-// const AuthContext = createContext(undefined);
-
-// // Dummy user for demo
-// const dummyUser = {
-//   id: '1',
-//   name: 'John Doe',
-//   email: 'john@example.com',
-//   avatar: undefined,
-// };
-
-// export function AuthProvider({ children }) {
-//   const [user, setUser] = useState(null);
-
-//   const login = async (email, password) => {
-//     // Simulate API call
-//     await new Promise(resolve => setTimeout(resolve, 1000));
-//     setUser(dummyUser);
-//   };
-
-//   const logout = () => {
-//     setUser(null);
-//   };
-
-//   const signup = async (name, email, password) => {
-//     // Simulate API call
-//     await new Promise(resolve => setTimeout(resolve, 1000));
-//     setUser({ ...dummyUser, name, email });
-//   };
-
-//   return (
-//     <AuthContext.Provider value={{ 
-//       user, 
-//       isAuthenticated: !!user, 
-//       login, 
-//       logout, 
-//       signup 
-//     }}>
-//       {children}
-//     </AuthContext.Provider>
-//   );
-// }
-
-// export function useAuth() {
-//   const context = useContext(AuthContext);
-//   if (context === undefined) {
-//     throw new Error('useAuth must be used within an AuthProvider');
-//   }
-//   return context;
-// }
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   GoogleAuthProvider,
@@ -70,17 +18,31 @@ export function AuthProvider({ children }) {
 
   // 🔹 Listen to auth state (important)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // ✅ Set user in React state
         setUser({
           id: firebaseUser.uid,
           name: firebaseUser.displayName,
           email: firebaseUser.email,
           avatar: firebaseUser.photoURL,
         });
+
+        // 🔑 Generate Firebase ID token
+        const token = await firebaseUser.getIdToken();
+
+        // 🔁 Send token to Chrome Extension
+        window.postMessage(
+          {
+            type: "SET_FIREBASE_TOKEN",
+            token,
+          },
+          "*"
+        );
       } else {
         setUser(null);
       }
+
       setLoading(false);
     });
 
@@ -89,8 +51,9 @@ export function AuthProvider({ children }) {
 
   // 🔹 Google login
   const loginWithGoogle = async () => {
-    try{const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
     } catch (error) {
       throw error;
     }
@@ -98,7 +61,7 @@ export function AuthProvider({ children }) {
 
   // 🔹 Email login
   const login = async (email, password) => {
-    try{
+    try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       throw error;
@@ -107,17 +70,21 @@ export function AuthProvider({ children }) {
 
   // 🔹 Email signup
   const signup = async (name, email, password) => {
-    try{
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-    // displayName can be updated later if needed
+    try {
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      // displayName can be updated later if needed
 
-    await updateProfile(result.user, { displayName: name });
-    setUser({
-    id: result.user.uid,
-  name: name, 
-  email: result.user.email,
-  avatar: result.user.photoURL,
-  });
+      await updateProfile(result.user, { displayName: name });
+      setUser({
+        id: result.user.uid,
+        name: name,
+        email: result.user.email,
+        avatar: result.user.photoURL,
+      });
     } catch (error) {
       throw error;
     }

@@ -1,3 +1,5 @@
+import { BACKEND_BASE_URL } from "./config.js";
+
 document.getElementById("analyzeBtn").addEventListener("click", async () => {
   const output = document.getElementById("output");
   output.textContent = "Analyzing reviews...";
@@ -11,23 +13,31 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/analyze", {
-        method: "POST",
-        headers: {
+      chrome.storage.local.get(["firebaseToken"], async ({ firebaseToken }) => {
+        const headers = {
           "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          platform: data.platform,
-          product: data.product,
-          reviews: data.reviews
-        })
+        };
+
+        // optional auth
+        if (firebaseToken) {
+          headers.Authorization = `Bearer ${firebaseToken}`;
+        }
+
+        const res = await fetch(`${BACKEND_BASE_URL}/api/analyze`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            platform: data.platform,
+            product: data.product,
+            reviews: data.reviews
+          })
+        });
+
+        const result = await res.json();
+        output.textContent = JSON.stringify(result, null, 2);
       });
-
-      const mlResult = await res.json();
-
-      output.textContent = JSON.stringify(mlResult, null, 2);
     } catch (err) {
-      output.textContent = "❌ Failed to connect to ML service";
+      output.textContent = "❌ Failed to connect to backend";
       console.error(err);
     }
   });

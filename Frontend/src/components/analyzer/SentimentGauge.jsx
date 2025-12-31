@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils';
 
 export function SentimentGauge({ score, sentiment, size = 'lg' }) {
+  const safeScore = Math.max(0, Math.min(score ?? 0, 100));
   const circumference = 2 * Math.PI * 45;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const strokeDashoffset = circumference - (safeScore / 100) * circumference;
 
   const sizeClasses = {
     sm: 'w-20 h-20',
@@ -74,7 +75,7 @@ export function SentimentGauge({ score, sentiment, size = 'lg' }) {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={cn('font-bold', textSizeClasses[size])}>{score}</span>
+          <span className={cn('font-bold', textSizeClasses[size])}>{safeScore}</span>
         </div>
       </div>
       <span
