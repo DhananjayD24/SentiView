@@ -74,29 +74,29 @@ export function AnalysisResults({ result, onSave }) {
       </div>
 
       {/* Keywords */}
-      <div className="glass-card p-6">
+      <div className="glass-card p-6 pb-10 relative">
         <h3 className="text-lg font-semibold mb-4">Key Insights</h3>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <KeywordCloud
             title="What customers love"
-            keywords={(result.insights?.reasonsToBuy || []).map((word) => ({
-              word,
-              count: null, // optional
-            }))}
+            keywords={result.insights?.reasonsToBuy || []}
             type="positive"
           />
+
           <KeywordCloud
             title="What needs improvement"
-            keywords={(result.insights?.reasonsToAvoid || []).map((word) => ({
-              word,
-              count: null,
-            }))}
+            keywords={result.insights?.reasonsToAvoid || []}
             type="negative"
           />
         </div>
+
+        <p className="absolute bottom-3 right-4 text-xs text-muted-foreground italic whitespace-nowrap opacity-70">
+          Numbers in brackets show how often each aspect was mentioned.
+        </p>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-1">
         <p className="text-xs text-muted-foreground leading-tight">
           Analysis based on{" "}
           <span className="font-medium text-foreground">

@@ -236,18 +236,28 @@ def generate_insights(aspect_summary: dict):
 
     for aspect, counts in aspect_summary.items():
         if aspect == "general":
-            continue  # skip useless aspect
+            continue
 
         good = counts["good"]
         avg = counts["average"]
         bad = counts["bad"]
+        total = good + avg + bad
 
         if good > bad and good >= avg:
-            reasons_to_buy.append(aspect)
+            reasons_to_buy.append({
+                "word": aspect,
+                "count": good
+            })
         elif bad > good and bad >= avg:
-            reasons_to_avoid.append(aspect)
+            reasons_to_avoid.append({
+                "word": aspect,
+                "count": bad
+            })
         else:
-            mixed_aspects.append(aspect)
+            mixed_aspects.append({
+                "word": aspect,
+                "count": total
+            })
 
     return reasons_to_buy, reasons_to_avoid, mixed_aspects
 
