@@ -1,11 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
   <title>Review Analyzer</title>
+
+  <style>
+    body {
+      width: 320px;
+      font-family: Arial, sans-serif;
+      padding: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+
+    #output {
+      margin-top: 10px;
+      white-space: pre-wrap;
+      font-size: 13px;
+    }
+  </style>
 </head>
+
 <body>
-  <h3>Analyze Reviews</h3>
+  <h3>Review Analyzer</h3>
+
   <button id="analyzeBtn">Analyze This Product</button>
+
+  <!-- 🔥 THIS WAS MISSING -->
+  <button id="analyzeMoreBtn" hidden>
+    Analyze More Reviews
+  </button>
 
   <pre id="output"></pre>
 
