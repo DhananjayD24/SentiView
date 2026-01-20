@@ -9,6 +9,12 @@ const analysisSchema = new mongoose.Schema(
       index: true,
     },
 
+    sessionId: {
+      type: String,
+      required: true,
+      index: true, // 🔑 key field
+    },
+
     platform: {
       type: String,
       enum: ["amazon", "flipkart"],
@@ -35,14 +41,35 @@ const analysisSchema = new mongoose.Schema(
       required: true,
     },
 
+    totalSentences: {
+      type: Number,
+      default: 0,
+    },
+
     insights: {
-      type: Object,
-      required: true,
+      reasonsToBuy: [
+        {
+          word: String,
+          count: Number,
+        },
+      ],
+      reasonsToAvoid: [
+        {
+          word: String,
+          count: Number,
+        },
+      ],
+      mixedAspects: [
+        {
+          word: String,
+          count: Number,
+        },
+      ],
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Analysis", analysisSchema);
