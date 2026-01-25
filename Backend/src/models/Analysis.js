@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const analysisSchema = new mongoose.Schema(
   {
+    processedReviews: {
+      type: [String], // array of hashes or review IDs
+      default: [],
+    },
     // Firebase UID
     userId: {
       type: String,
