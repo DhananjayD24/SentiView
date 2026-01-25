@@ -1,91 +1,98 @@
 console.log("✅ CONTENT SCRIPT LOADED");
 
+/* ================= UTIL ================= */
+
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
 /* ================= PLATFORM ================= */
 
 function detectPlatform() {
-  if (location.hostname.includes("amazon")) return "amazon";
-  return "unknown";
+  return location.hostname.includes("amazon") ? "amazon" : "unknown";
 }
 
 /* ================= PRODUCT INFO ================= */
 
+function decodeHTMLEntities(text) {
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
 function extractAmazonProductName() {
-  return (
-    document.querySelector("#productTitle")?.innerText.trim() ||
+  const rawTitle =
+    document.querySelector("#productTitle")?.innerText ||
     document.title.replace("Amazon.in:Customer reviews:", "").trim() ||
-    null
-  );
+    null;
+
+  return rawTitle ? decodeHTMLEntities(rawTitle).trim() : null;
 }
 
-function getAmazonASIN() {
-  const domAsin =
-    document.querySelector("#ASIN")?.value ||
-    document.querySelector("[data-asin]")?.getAttribute("data-asin");
+/* ================= REVIEW EXTRACTION ================= */
 
-  if (domAsin) return domAsin;
-
-  const match = location.pathname.match(/product-reviews\/([A-Z0-9]{10})/);
-  return match ? match[1] : null;
-}
-
-/* ================= REVIEW FETCH ================= */
-let lastPageSignature = null;
-
-async function fetchAmazonReviewsRange(asin, startPage, endPage) {
+function extractReviewsFromCurrentPage() {
   const reviews = [];
+  const blocks = document.querySelectorAll('[data-hook="review"]');
+
+  blocks.forEach((block) => {
+    const text = block.querySelector('[data-hook="review-body"]')?.innerText;
+    const rating = block
+      .querySelector('[data-hook="review-star-rating"] span')
+      ?.innerText.match(/(\d)/)?.[1];
+
+    if (!text || !rating) return;
+    if (text.includes("The media could not be loaded")) return;
+
+    reviews.push({
+      text: text.trim(),
+      rating: Number(rating),
+    });
+  });
+
+  return reviews;
+}
+
+function clickNextPage() {
+  const nextBtn = document.querySelector("li.a-last a");
+  if (!nextBtn) return false;
+  nextBtn.click();
+  return true;
+}
+
+/* ================= MAIN COLLECTOR ================= */
+
+async function collectAmazonReviews(pagesToCollect = 1) {
+  const allReviews = [];
   const seen = new Set();
 
-  for (let page = startPage; page <= endPage; page++) {
-    console.log(`📄 Fetching Amazon review page: ${page}`);
-    
-    const res = await fetch(
-      `https://www.amazon.in/product-reviews/${asin}?pageNumber=${page}&reviewerType=all_reviews&sortBy=recent`,
-      { credentials: "include" }
-    );
+  for (let i = 0; i < pagesToCollect; i++) {
+    console.log(`📄 Reading Amazon review page ${i + 1}`);
 
-    const html = await res.text();
-    const doc = new DOMParser().parseFromString(html, "text/html");
+    const pageReviews = extractReviewsFromCurrentPage();
 
-    /* 🔑 DUPLICATE PAGE DETECTION (CRITICAL FIX) */
-    const pageSignature = doc.body.innerText.slice(0, 500);
-    if (pageSignature === lastPageSignature) {
-      console.warn(`⚠️ Amazon returned duplicate page at ${page}, stopping.`);
-      break;
-    }
-    lastPageSignature = pageSignature;
-
-    const blocks = doc.querySelectorAll('[data-hook="review"]');
-
-    // 🛑 Stop if Amazon stops giving reviews
-    if (blocks.length === 0) {
-      console.warn(`⚠️ No reviews found on page ${page}, stopping.`);
-      break;
-    }
-
-    blocks.forEach((block) => {
-      const text = block.querySelector('[data-hook="review-body"]')?.innerText;
-      const rating = block
-        .querySelector('[data-hook="review-star-rating"] span')
-        ?.innerText.match(/(\d)/)?.[1];
-
-      if (!text || !rating) return;
-
-      // 🚫 Filter fake media placeholder reviews
-      if (text.includes("The media could not be loaded")) return;
-
-      const key = text.trim().toLowerCase();
-      if (seen.has(key)) return;
-
-      seen.add(key);
-      reviews.push({
-        text: text.trim(),
-        rating: Number(rating),
-      });
+    pageReviews.forEach((r) => {
+      const key = `${r.rating}|${r.text.toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        allReviews.push(r);
+      }
     });
+
+    console.log(`✅ Total collected so far: ${allReviews.length}`);
+
+    if (i === pagesToCollect - 1) {
+      return { reviews: allReviews, hasMorePages: true };
+    }
+
+    const moved = clickNextPage();
+    if (!moved) {
+      console.warn("❌ No next page button found. Stopping.");
+      return { reviews: allReviews, hasMorePages: false };
+    }
+
+    await sleep(3500); // wait for Amazon navigation
   }
 
-  console.log("✅ Reviews collected:", reviews.length);
-  return reviews;
+  return { reviews: allReviews, hasMorePages: false };
 }
 
 /* ================= MESSAGE HANDLER ================= */
@@ -94,29 +101,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action !== "EXTRACT_REVIEWS") return;
 
   (async () => {
-    const platform = detectPlatform();
-    if (platform !== "amazon") {
+    if (detectPlatform() !== "amazon") {
       sendResponse({ error: "Unsupported platform" });
       return;
     }
 
-    const asin = getAmazonASIN();
-    if (!asin) {
-      sendResponse({ error: "ASIN not found" });
-      return;
-    }
+    const pages = msg.pages ?? 1;
+    const result = await collectAmazonReviews(pages);
 
-    const { startPage, endPage } = msg;
-    if (!startPage || !endPage) {
-      sendResponse({ error: "Page range missing" });
-      return;
-    }
-
-    const reviews = await fetchAmazonReviewsRange(
-      asin,
-      startPage,
-      endPage
-    );
+    console.log("📦 Sending reviews to popup:", result.reviews.length);
 
     sendResponse({
       platform: "amazon",
@@ -124,11 +117,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         name: extractAmazonProductName(),
         url: location.href,
       },
-      reviews,
+      reviews: result.reviews,
+      hasMorePages: result.hasMorePages,
     });
   })();
 
-  return true; // async response
+  return true;
 });
 
 /* ================= FIREBASE TOKEN ================= */
