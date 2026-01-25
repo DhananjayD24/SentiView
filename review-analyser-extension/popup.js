@@ -4,11 +4,10 @@ const analyzeBtn = document.getElementById("analyzeBtn");
 const analyzeMoreBtn = document.getElementById("analyzeMoreBtn");
 const output = document.getElementById("output");
 
-let currentPages = 5; // default = 50 reviews
-let lastSentCount = 0;
+let currentPage = 1;
 let analysisSessionId = null;
 
-async function analyze(pages) {
+async function analyze(page) {
   output.textContent = "Analyzing reviews, please wait...";
   analyzeMoreBtn.hidden = true;
 
@@ -16,7 +15,7 @@ async function analyze(pages) {
 
   chrome.tabs.sendMessage(
     tab.id,
-    { action: "EXTRACT_REVIEWS", pages },
+    { action: "EXTRACT_REVIEWS", startPage: page, endPage: page },
     async (data) => {
       if (chrome.runtime.lastError || !data || data.error) {
         output.textContent = "Please refresh the product page and try again.";
@@ -24,7 +23,6 @@ async function analyze(pages) {
       }
 
       try {
-        // 🔑 RESTORED AUTH FLOW (THIS FIXES HISTORY)
         chrome.storage.local.get(
           ["firebaseToken"],
           async ({ firebaseToken }) => {
@@ -36,38 +34,43 @@ async function analyze(pages) {
               headers.Authorization = `Bearer ${firebaseToken}`;
             }
 
-            const newReviews = data.reviews.slice(lastSentCount);
-            lastSentCount = data.reviews.length;
-
-            if (newReviews.length === 0) {
-              output.textContent = "No more reviews found. Try again later.";
+            if (!data.reviews || data.reviews.length === 0) {
+              output.textContent = "No more reviews found.";
               analyzeMoreBtn.hidden = true;
               return;
             }
 
-            const res = await fetch(`${BACKEND_BASE_URL}/api/analyze`, {
+            // 🔍 DEBUG LOG (keep for now)
+            console.log("📦 Reviews fetched from content script:");
+            console.log("Count:", data.reviews.length);
+            console.log(
+              data.reviews.map((r, i) => ({
+                index: i + 1,
+                rating: r.rating,
+                preview: r.text.slice(0, 60),
+              }))
+            );
+
+            await fetch(`${BACKEND_BASE_URL}/api/analyze`, {
               method: "POST",
               headers,
               body: JSON.stringify({
                 platform: data.platform,
                 product: data.product,
-                reviews: newReviews,
-                sessionId: analysisSessionId
+                reviews: data.reviews,
+                sessionId: analysisSessionId,
               }),
             });
-
-            const result = await res.json();
-
-            const analyzed = data.reviews.length;
 
             output.textContent = `
 Product: ${data.product?.name || "Unknown"}
 
-Analysis completed for ${analyzed} reviews.
+Analysis completed for ${data.reviews.length} new reviews.
 
 You may refer to the Sentiment Analysis History
 for detailed insights.
-          `.trim();
+            `.trim();
+
             analyzeMoreBtn.hidden = false;
           }
         );
@@ -79,16 +82,17 @@ for detailed insights.
   );
 }
 
-// Initial analysis
+/* ================= BUTTONS ================= */
+
+// First analyze → page 1
 analyzeBtn.addEventListener("click", () => {
-  currentPages = 5;
-  lastSentCount = 0;
-  analysisSessionId = crypto.randomUUID(); // 🔑 NEW SESSION
-  analyze(currentPages);
+  currentPage = 1;
+  analysisSessionId = crypto.randomUUID(); // new session
+  analyze(currentPage);
 });
 
-// Analyze more reviews
+// Analyze more → next page
 analyzeMoreBtn.addEventListener("click", () => {
-  currentPages += 5; // increase safely
-  analyze(currentPages);
+  currentPage += 1;
+  analyze(currentPage);
 });
