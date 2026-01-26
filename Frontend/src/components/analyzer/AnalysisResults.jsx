@@ -24,16 +24,16 @@ export function AnalysisResults({ result, onSave }) {
     positive >= negative && positive >= neutral
       ? "positive"
       : negative >= positive && negative >= neutral
-      ? "negative"
-      : "neutral";
+        ? "negative"
+        : "neutral";
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="glass-card p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="glass-card p-4 sm:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
-            <h2 className="text-xl font-bold mb-1">
+            <h2 className="text-lg sm:text-xl font-bold mb-1">
               {result.product?.name || "Product Analysis"}
             </h2>
             {result.product?.url && (
@@ -47,9 +47,15 @@ export function AnalysisResults({ result, onSave }) {
               </a>
             )}
           </div>
+
           <div className="flex gap-2">
             {isAuthenticated && (
-              <Button variant="outline" size="sm" onClick={onSave}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSave}
+                className="w-full md:w-auto"
+              >
                 <Star className="h-4 w-4" />
                 Save Product
               </Button>
@@ -57,13 +63,14 @@ export function AnalysisResults({ result, onSave }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           <div className="flex justify-center">
             <SentimentGauge
               score={sentimentScore}
               sentiment={overallSentiment}
             />
           </div>
+
           <SentimentDistribution
             positive={positive}
             negative={negative}
@@ -74,10 +81,12 @@ export function AnalysisResults({ result, onSave }) {
       </div>
 
       {/* Keywords */}
-      <div className="glass-card p-6 pb-10 relative">
-        <h3 className="text-lg font-semibold mb-4">Key Insights</h3>
+      <div className="glass-card p-4 sm:p-6 pb-12 sm:pb-10 relative">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">
+          Key Insights
+        </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-6">
           <KeywordCloud
             title="What customers love"
             keywords={result.insights?.reasonsToBuy || []}
@@ -91,7 +100,10 @@ export function AnalysisResults({ result, onSave }) {
           />
         </div>
 
-        <p className="absolute bottom-3 right-4 text-xs text-muted-foreground italic whitespace-nowrap opacity-70">
+        <p
+          className="absolute bottom-3 right-4 text-xs text-muted-foreground italic opacity-70
+            max-w-[90%] text-right sm:whitespace-nowrap"
+        >
           Numbers in brackets show how often each aspect was mentioned.
         </p>
       </div>
